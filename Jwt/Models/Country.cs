@@ -11,6 +11,6 @@ namespace Jwt.Models
 
         public string Description { get; set; }
 
-        public ICollection<State> State { get; set; }
+        public ICollection<State> States { get; set; }
     }
 }

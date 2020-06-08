@@ -13,6 +13,7 @@
       "launchBrowser": true,
       "launchUrl": "https://localhost:44312/",
       "environmentVariables": {
+        "secretKey": "FAFERoek#$%#$%$#%$#$324f23f2d3%$$#$#$C%#&#$&34f63DFjeje",
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },

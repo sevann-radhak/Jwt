@@ -13,26 +13,33 @@ using Microsoft.Extensions.Options;
 using Jwt.Models;
 using Jwt.Models.AccountViewModels;
 using Jwt.Services;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.Extensions.Configuration;
 
 namespace Jwt.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [Route("[controller]/[action]")]
     public class AccountController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly IConfiguration _configuration;
         private readonly IEmailSender _emailSender;
         private readonly ILogger _logger;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
+            IConfiguration configuration,
             IEmailSender emailSender,
             ILogger<AccountController> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _configuration = configuration;
             _emailSender = emailSender;
             _logger = logger;
         }
@@ -64,8 +71,13 @@ namespace Jwt.Controllers
                 var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation("User logged in.");
-                    return RedirectToLocal(returnUrl);
+                    //
+                    return BuildToken(model);
+
+                    //
+
+                    //_logger.LogInformation("User logged in.");
+                    //return RedirectToLocal(returnUrl);
                 }
                 if (result.RequiresTwoFactor)
                 {
@@ -240,6 +252,113 @@ namespace Jwt.Controllers
             // If we got this far, something failed, redisplay form
             return View(model);
         }
+
+        //[HttpPost]
+        //[Route("/api/account/create")]
+        //public async Task<IActionResult> CreateUser([FromBody] LoginViewModel model)
+        //{
+        //    if (ModelState.IsValid)
+        //    {
+        //        var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+        //        var result = await _userManager.CreateAsync(user, model.Password);
+        //        if (result.Succeeded)
+        //        {
+        //            return BuildToken(model);
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Username or password invalid");
+        //        }
+        //    }
+
+        //    // If we got this far, something failed, redisplay form
+        //    return BadRequest(ModelState);
+        //}
+
+        [Route("/api/account/create")]
+        [HttpPost]
+        public async Task<IActionResult> CreateUser([FromBody] LoginViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+                var result = await _userManager.CreateAsync(user, model.Password);
+                if (result.Succeeded)
+                {
+                    return BuildToken(model);
+                }
+                else
+                {
+                    return BadRequest("Username or password invalid");
+                }
+            }
+            else
+            {
+                return BadRequest(ModelState);
+            }
+
+        }
+
+        //private IActionResult BuildToken(LoginViewModel model)
+        //{
+        //    var claims = new[]
+        //    {
+        //        new Claim(JwtRegisteredClaimNames.UniqueName, model.Email),
+        //        new Claim("my claim", "my claim value"),
+        //        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        //    };
+
+        //    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["secretKey"]));
+        //    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        //    var expires = DateTime.UtcNow.AddDays(15);
+
+        //    JwtSecurityToken token = new JwtSecurityToken(
+        //        issuer: "mysite.com",
+        //        audience: "mysite.com",
+        //        claims,
+        //        expires,
+        //        signingCredentials: creds);
+
+        //    return Ok(new 
+        //    {
+        //        isSuccess =  true,
+        //        token = new JwtSecurityTokenHandler().WriteToken(token),
+        //        expires
+        //    });
+        //}
+
+
+        private IActionResult BuildToken(LoginViewModel model)
+        {
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.UniqueName, model.Email),
+                new Claim("miValor", "Lo que yo quiera"),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["secretKey"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var expiration = DateTime.UtcNow.AddHours(1);
+
+            JwtSecurityToken token = new JwtSecurityToken(
+               issuer: "yourdomain.com",
+               audience: "yourdomain.com",
+               claims: claims,
+               expires: expiration,
+               signingCredentials: creds);
+
+            return Ok(new
+            {
+                isSuccess =  true,
+                token = new JwtSecurityTokenHandler().WriteToken(token),
+                expiration = expiration
+            });
+
+        }
+
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]

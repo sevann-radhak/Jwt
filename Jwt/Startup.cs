@@ -11,6 +11,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Jwt.Data;
 using Jwt.Models;
 using Jwt.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace Jwt
 {
@@ -40,6 +43,37 @@ namespace Jwt
             })
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
+
+            //services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            //    .AddJwtBearer(options => {
+            //        options.TokenValidationParameters = new TokenValidationParameters
+            //        {
+            //            ValidateIssuer = true,
+            //            ValidateAudience = true,
+            //            ValidateLifetime = true,
+            //            ValidateIssuerSigningKey = true,
+            //            ValidIssuer = "mysite.com",
+            //            ValidAudience = "mysite.com",
+            //            IssuerSigningKey = new SymmetricSecurityKey(
+            //                Encoding.UTF8.GetBytes(Configuration["secretKey"])),
+            //            ClockSkew = TimeSpan.Zero
+            //        };
+            //    });
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                 options.TokenValidationParameters = new TokenValidationParameters
+                 {
+                     ValidateIssuer = true,
+                     ValidateAudience = true,
+                     ValidateLifetime = true,
+                     ValidateIssuerSigningKey = true,
+                     ValidIssuer = "yourdomain.com",
+                     ValidAudience = "yourdomain.com",
+                     IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(Configuration["secretKey"])),
+                     ClockSkew = TimeSpan.Zero
+                 });
 
             // Add application services.
             services.AddTransient<IEmailSender, EmailSender>();
@@ -71,6 +105,19 @@ namespace Jwt
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
             });
+
+            //if(!_context.Countries.Any())
+            //{
+            //    _context.Countries.AddRange(new List<Country>()
+            //    {
+            //        new Country()
+            //        {
+            //            Name = "Colombia", 
+            //            Description = "Beautiful",
+            //            States
+            //        }
+            //    });
+            //}
         }
     }
 }
