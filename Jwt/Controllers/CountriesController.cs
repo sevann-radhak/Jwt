@@ -26,7 +26,12 @@ namespace Jwt.Controllers
         [HttpGet]
         public IEnumerable<Country> GetCountries()
         {
-            return _context.Countries;
+            var claims = User.Claims.ToList();
+            return claims.Any(c => c.Type == "Admin" && c.Value == true.ToString())
+                ? _context.Countries.OrderBy(c => c.Name)
+                : _context.Countries
+                    .Where(c => c.Name == claims
+                        .FirstOrDefault(cl => cl.Type == "Country").Value);
         }
 
         // GET: api/Countries/5

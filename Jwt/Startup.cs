@@ -14,6 +14,7 @@ using Jwt.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Jwt.Models.Error;
 
 namespace Jwt
 {
@@ -32,17 +33,18 @@ namespace Jwt
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
-            services.AddIdentity<ApplicationUser, IdentityRole>(config=>
+            services.AddIdentity<ApplicationUser, IdentityRole>(config =>
             {
                 config.Password.RequireDigit = false;
                 config.Password.RequireLowercase = false;
                 config.Password.RequiredLength = 4;
                 config.Password.RequireNonAlphanumeric = false;
-                config.Password.RequireUppercase = false;
-                config.SignIn.RequireConfirmedEmail = true;
+                config.Password.RequireUppercase = true;
+                config.SignIn.RequireConfirmedEmail = false;
             })
                 .AddEntityFrameworkStores<ApplicationDbContext>()
-                .AddDefaultTokenProviders();
+                .AddDefaultTokenProviders()
+                .AddErrorDescriber<ErrorDescriber>();
 
             //services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             //    .AddJwtBearer(options => {
@@ -71,7 +73,7 @@ namespace Jwt
                      ValidIssuer = "yourdomain.com",
                      ValidAudience = "yourdomain.com",
                      IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(Configuration["secretKey"])),
+                         Encoding.UTF8.GetBytes(Configuration["secretKey"])),
                      ClockSkew = TimeSpan.Zero
                  });
 

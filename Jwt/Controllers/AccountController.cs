@@ -20,8 +20,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace Jwt.Controllers
 {
-    //[Authorize]
-    [Route("[controller]/[action]")]
+    [Produces("application/json")]
+    [Route("api/Account")]
     public class AccountController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -59,45 +59,73 @@ namespace Jwt.Controllers
         }
 
         [HttpPost]
-        [AllowAnonymous]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
+        [Route("Login")]
+        public async Task<IActionResult> Login([FromBody] LoginViewModel model)
         {
-            ViewData["ReturnUrl"] = returnUrl;
             if (ModelState.IsValid)
             {
-                // This doesn't count login failures towards account lockout
-                // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-                var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+                var result = await _signInManager.PasswordSignInAsync(
+                    model.Email,
+                    model.Password,
+                    model.RememberMe,
+                    false);
+
                 if (result.Succeeded)
                 {
-                    //
                     return BuildToken(model);
-
-                    //
-
-                    //_logger.LogInformation("User logged in.");
-                    //return RedirectToLocal(returnUrl);
-                }
-                if (result.RequiresTwoFactor)
-                {
-                    return RedirectToAction(nameof(LoginWith2fa), new { returnUrl, model.RememberMe });
-                }
-                if (result.IsLockedOut)
-                {
-                    _logger.LogWarning("User account locked out.");
-                    return RedirectToAction(nameof(Lockout));
                 }
                 else
                 {
                     ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                    return View(model);
+                    return BadRequest(ModelState);
                 }
             }
-
-            // If we got this far, something failed, redisplay form
-            return View(model);
+            else
+            {
+                return BadRequest(ModelState);
+            }
         }
+
+        //[HttpPost]
+        //[AllowAnonymous]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
+        //{
+        //    ViewData["ReturnUrl"] = returnUrl;
+        //    if (ModelState.IsValid)
+        //    {
+        //        // This doesn't count login failures towards account lockout
+        //        // To enable password failures to trigger account lockout, set lockoutOnFailure: true
+        //        var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+        //        if (result.Succeeded)
+        //        {
+        //            //
+        //            return BuildToken(model);
+
+        //            //
+
+        //            //_logger.LogInformation("User logged in.");
+        //            //return RedirectToLocal(returnUrl);
+        //        }
+        //        if (result.RequiresTwoFactor)
+        //        {
+        //            return RedirectToAction(nameof(LoginWith2fa), new { returnUrl, model.RememberMe });
+        //        }
+        //        if (result.IsLockedOut)
+        //        {
+        //            _logger.LogWarning("User account locked out.");
+        //            return RedirectToAction(nameof(Lockout));
+        //        }
+        //        else
+        //        {
+        //            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+        //            return View(model);
+        //        }
+        //    }
+
+        // If we got this far, something failed, redisplay form
+        //    return View(model);
+        //}
 
         [HttpGet]
         [AllowAnonymous]
@@ -217,6 +245,7 @@ namespace Jwt.Controllers
         }
 
         [HttpGet]
+        [Route("Register")]
         [AllowAnonymous]
         public IActionResult Register(string returnUrl = null)
         {
@@ -225,6 +254,7 @@ namespace Jwt.Controllers
         }
 
         [HttpPost]
+        [Route("Register")]
         [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model, string returnUrl = null)
@@ -275,7 +305,8 @@ namespace Jwt.Controllers
         //    return BadRequest(ModelState);
         //}
 
-        [Route("/api/account/create")]
+        //[Route("/api/account/create")]
+        [Route("Create")]
         [HttpPost]
         public async Task<IActionResult> CreateUser([FromBody] LoginViewModel model)
         {
@@ -334,7 +365,9 @@ namespace Jwt.Controllers
             {
                 new Claim(JwtRegisteredClaimNames.UniqueName, model.Email),
                 new Claim("miValor", "Lo que yo quiera"),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("Country", "Argentina"),
+                //new Claim("Admin", true.ToString())
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["secretKey"]));
@@ -351,7 +384,7 @@ namespace Jwt.Controllers
 
             return Ok(new
             {
-                isSuccess =  true,
+                isSuccess = true,
                 token = new JwtSecurityTokenHandler().WriteToken(token),
                 expiration = expiration
             });
